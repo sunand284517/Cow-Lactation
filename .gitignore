@@ -1,0 +1,11 @@
+node_modules/
+venv/
+__pycache__/
+*.pyc
+.env
+dump.rdb
+.DS_Store
+*.dylib
+*.log
+backend/uploads/
+ml_worker/*.pth
