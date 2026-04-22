@@ -35,3 +35,4 @@ services:
   - type: redis
     name: "celery-broker"
     plan: free # Free tier allows small redis DBs
+    ipAllowList: [] # Requires IP allow list, empty means only internal traffic
