@@ -1,0 +1,37 @@
+services:
+  - type: web
+    name: "cow-lactation-backend"
+    env: node
+    rootDir: backend
+    buildCommand: "npm install"
+    startCommand: "node server.js"
+    envVars:
+      - key: MONGO_URI
+        sync: false # Requires manual entry in dashboard
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CELERY_BROKER_URL
+        fromService:
+          type: redis
+          name: "celery-broker"
+          property: connectionString
+
+  - type: worker
+    name: "cow-lactation-ml-worker"
+    env: python
+    rootDir: ml_worker
+    buildCommand: "pip install -r requirements.txt"
+    startCommand: "celery -A worker worker --loglevel=info"
+    plan: starter # 512MB memory is often not enough for large PyTorch models
+    envVars:
+      - key: MONGO_URI
+        sync: false # Requires manual entry in dashboard
+      - key: CELERY_BROKER_URL
+        fromService:
+          type: redis
+          name: "celery-broker"
+          property: connectionString
+
+  - type: redis
+    name: "celery-broker"
+    plan: free # Free tier allows small redis DBs

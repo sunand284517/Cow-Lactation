@@ -1,7 +1,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-  baseURL: '/api',
+  // Use Vite environment variable if available (production), otherwise default back to the local proxy
+  baseURL: import.meta.env.VITE_API_URL || '/api',
 });
 
 // Add a request interceptor to add the auth token to headers
