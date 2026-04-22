@@ -33,23 +33,67 @@ const Dashboard = () => {
 
     setIsLoading(true);
     setError('');
-    
-    const formData = new FormData();
-    formData.append('image', file);
-    formData.append('cowId', cowId);
 
-    try {
-      await api.post('/inference/upload', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      setFile(null);
-      setCowId('');
-      fetchHistory();
-    } catch (err) {
-      setError(err.response?.data?.message || 'Failed to upload image');
-    } finally {
+    // Pre-flight check: Client-side heuristic for "Irrelevant Images"
+    const img = new window.Image();
+    const objectUrl = URL.createObjectURL(file);
+
+    img.onload = async () => {
+      const canvas = document.createElement('canvas');
+      const ctx = canvas.getContext('2d');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      ctx.drawImage(img, 0, 0);
+      const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      
+      let totalVariance = 0;
+      let count = 0;
+      // Sample every 4th pixel to save time
+      for (let i = 0; i < data.length; i += 16) {
+        const r = data[i];
+        const g = data[i+1];
+        const b = data[i+2];
+        const avg = (r + g + b) / 3;
+        const variance = ((r - avg)**2 + (g - avg)**2 + (b - avg)**2) / 3;
+        totalVariance += Math.sqrt(variance);
+        count++;
+      }
+      
+      const meanStdDev = totalVariance / count;
+      URL.revokeObjectURL(objectUrl);
+      
+      if (meanStdDev > 10) {
+        setIsLoading(false);
+        const errMsg = "Irrelevant image detected. Please upload a valid grayscale cow sonogram/ultrasound.";
+        setError(errMsg);
+        alert(errMsg); // Pop up on user screen
+        return;
+      }
+      
+      // Proceed with upload
+      const formData = new FormData();
+      formData.append('image', file);
+      formData.append('cowId', cowId);
+
+      try {
+        await api.post('/inference/upload', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+        setFile(null);
+        setCowId('');
+        fetchHistory();
+      } catch (err) {
+        setError(err.response?.data?.message || 'Failed to upload image');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    
+    img.onerror = () => {
       setIsLoading(false);
-    }
+      setError("Invalid image file.");
+      URL.revokeObjectURL(objectUrl);
+    };
   };
 
   const getStatusBadge = (status) => {
@@ -120,6 +164,11 @@ const Dashboard = () => {
                       </strong>
                       {getStatusBadge(item.status)}
                     </div>
+                    {item.status === 'FAILED' && item.error && (
+                      <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '8px', borderLeft: '3px solid var(--error)' }}>
+                        <div style={{ fontWeight: '600', color: 'var(--error)' }}>{item.error}</div>
+                      </div>
+                    )}
                     {item.classification && (
                       <div style={{ marginTop: '0.75rem', padding: '0.75rem', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '8px', borderLeft: '3px solid var(--success)' }}>
                         <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>Classified Stage:</div>

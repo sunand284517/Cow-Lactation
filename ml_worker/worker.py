@@ -38,5 +38,5 @@ def predict_sonogram_task(sonogram_id, image_path):
         return {"status": "success", "classification": classification, "predictedYield": predicted_yield}
     except Exception as e:
         print(f"Error processing task: {str(e)}")
-        sonogram_collection.update_one({'_id': ObjectId(sonogram_id)}, {'$set': {'status': 'FAILED'}})
+        sonogram_collection.update_one({'_id': ObjectId(sonogram_id)}, {'$set': {'status': 'FAILED', 'error': str(e)}})
         return {"status": "failed", "error": str(e)}

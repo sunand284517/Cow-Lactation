@@ -8,6 +8,7 @@ const SonogramResultSchema = new mongoose.Schema({
   classification: { type: String, default: null }, // e.g., 'Peak Lactation', 'Dry Period'
   confidence: { type: Number, default: null },
   predictedYield: { type: Number, default: null },
+  error: { type: String, default: null },
   createdAt: { type: Date, default: Date.now },
   updatedAt: { type: Date, default: Date.now }
 });

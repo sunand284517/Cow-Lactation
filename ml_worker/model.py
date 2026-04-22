@@ -56,6 +56,19 @@ def predict_image(image_path, model_path='cow_model.pth'):
     """
     Given an image path, return a tuple: (classification, confidence, predicted_yield).
     """
+    import numpy as np
+    
+    # Check if image is an irrelevant color photo (sonograms are grayscale)
+    try:
+        img_check = Image.open(image_path).convert('RGB')
+        color_variance = np.mean(np.std(np.array(img_check), axis=2))
+        if color_variance > 10.0:
+            raise ValueError("Irrelevant image detected. Please upload a valid grayscale cow ultrasound/sonogram.")
+    except ValueError as val_err:
+        raise val_err
+    except Exception as e:
+        pass
+        
     if os.path.exists(model_path):
         try:
             device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
